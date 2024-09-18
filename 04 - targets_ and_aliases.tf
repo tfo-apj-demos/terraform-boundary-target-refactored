@@ -28,21 +28,27 @@ resource "boundary_target" "tcp_with_creds" {
   ingress_worker_filter          = "\"vmware\" in \"/tags/platform\"" # Filter for workers with the "vmware" tag
 }
 
-# Boundary alias for all TCP services
-resource "boundary_alias_target" "tcp_alias" {
+# Boundary alias for all services (TCP/SSH with or without credentials)
+resource "boundary_alias_target" "service_alias" {
   for_each = {
-    for host in boundary_host_static.this : host.hostname => host
+    for host_key, host in boundary_host_static.this : host_key => host
   }
 
-  name                      = "${each.value.name}_tcp_alias"
-  description               = "Alias for ${each.value.name} TCP access"
+  name                      = "${each.value.name}_service_alias"
+  description               = "Alias for ${each.value.name} access"
   scope_id                  = "global"
 
   # Use the address from the hosts input as the alias value
-  value                     = lookup({ for host in var.hosts : host.hostname => host.address }, each.value.name, null)
+  value                     = lookup({ for host in var.hosts : host.name => host.address }, each.value.name, null)
 
-  # Destination ID (always refers to tcp_with_creds as we don't have without_creds)
-  destination_id            = boundary_target.tcp_with_creds[each.value.name].id
+  # Dynamically set the destination_id based on the service type (TCP/SSH)
+  destination_id = contains([for service in var.services : service.name], each.value.name) ?
+    (
+      lookup({ for service in var.services : service.name => service.type }, each.value.name) == "tcp" ?
+        boundary_target.tcp_with_creds[each.key].id :
+        boundary_target.ssh_with_creds[each.key].id
+    )
+    : null
 
   authorize_session_host_id = each.value.id
 }
