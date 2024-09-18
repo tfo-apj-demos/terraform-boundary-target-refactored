@@ -1,11 +1,7 @@
 locals {
-  # Generate destination_ids based on service type and hostname
+  # Map destination IDs using host names
   destination_ids = {
-    for host in var.hosts :
-    host.hostname => (
-      var.services[0].type == "ssh" ? boundary_target.ssh_with_creds[host.hostname].id :
-      var.services[0].type == "tcp" ? boundary_target.tcp_with_creds[host.hostname].id : null
-    )
+    for host in var.hosts : host.name => boundary_target.tcp_with_creds[host.name].id
   }
 }
 
@@ -37,18 +33,17 @@ resource "boundary_target" "tcp_with_creds" {
   brokered_credential_source_ids = local.hostname_to_service_map[each.key].use_vault_creds ? [local.tcp_credential_library_ids[each.key]] : null
 }
 
-# Boundary alias for services
+# Boundary alias for TCP and SSH services
 resource "boundary_alias_target" "service_alias" {
-  for_each = {
-    for host in boundary_host_static.this : host.id => host
-  }
+  for_each = boundary_host_static.this
 
   name                      = "${each.value.name}_service_alias"
-  description               = "Alias for ${each.value.hostname} access"
+  description               = "Alias for ${each.value.name} access"
   scope_id                  = "global"
-  value                     = each.value.address  # Use host address directly
-  destination_id            = local.destination_ids[each.key]
+
+  # Use the address from the hosts input as the alias value
+  value                     = lookup({ for host in var.hosts : host.name => host.address }, each.value.name, null)
+
+  destination_id            = local.destination_ids[each.value.name]  # Fix: refer by the correct name
   authorize_session_host_id = each.value.id
 }
-
-
