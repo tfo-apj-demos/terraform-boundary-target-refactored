@@ -9,34 +9,32 @@ locals {
   }
 }
 
-# Boundary target for SSH services 
+# Boundary target for SSH services
 resource "boundary_target" "ssh_with_creds" {
-  for_each = { for service in var.services : service.name => service if service.type == "ssh" }
+  for_each = { for host in var.hosts : host.hostname => host if var.services[0].type == "ssh" }
 
-  name            = "${var.hostname_prefix} SSH Access"
-  type            = each.value.type
-  default_port    = each.value.port
+  name            = "${each.value.hostname} SSH Access"
+  type            = var.services[0].type
+  default_port    = var.services[0].port
   scope_id        = data.boundary_scope.project.id
   host_source_ids = [boundary_host_set_static.this.id]
 
   # Inject SSH credentials if provided
-  injected_application_credential_source_ids = contains(keys(local.ssh_credential_library_ids), each.key) ? [local.ssh_credential_library_ids[each.key]] : null
-  # ingress_worker_filter removed as it is not expected here
+  injected_application_credential_source_ids = local.processed_services[each.key].use_vault_creds ? [local.ssh_credential_library_ids[each.key]] : null
 }
 
 # Boundary target for TCP services
 resource "boundary_target" "tcp_with_creds" {
-  for_each = { for service in var.services : service.name => service if service.type == "tcp" }
+  for_each = { for host in var.hosts : host.hostname => host if var.services[0].type == "tcp" }
 
-  name            = "${var.hostname_prefix} TCP Access"
-  type            = each.value.type
-  default_port    = each.value.port
+  name            = "${each.value.hostname} TCP Access"
+  type            = var.services[0].type
+  default_port    = var.services[0].port
   scope_id        = data.boundary_scope.project.id
   host_source_ids = [boundary_host_set_static.this.id]
 
   # Broker TCP credentials if provided
-  brokered_credential_source_ids = contains(keys(local.tcp_credential_library_ids), each.key) ? [local.tcp_credential_library_ids[each.key]] : null
-  ingress_worker_filter          = "\"vmware\" in \"/tags/platform\"" # Filter for workers with the "vmware" tag
+  brokered_credential_source_ids = local.processed_services[each.key].use_vault_creds ? [local.tcp_credential_library_ids[each.key]] : null
 }
 
 # Boundary alias for services
