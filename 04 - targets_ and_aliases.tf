@@ -1,15 +1,15 @@
 locals {
-  # Map service names to their corresponding target IDs
+  # Generate destination_ids based on service type and hostname
   destination_ids = {
-    for service in var.services : service.name => lookup(boundary_target.tcp_with_creds, service.name, null) != null 
-      ? boundary_target.tcp_with_creds[service.name].id
-      : lookup(boundary_target.ssh_with_creds, service.name, null) != null 
-      ? boundary_target.ssh_with_creds[service.name].id 
-      : null
+    for host in var.hosts :
+    host.hostname => (
+      var.services[0].type == "ssh" ? boundary_target.ssh_with_creds[host.hostname].id :
+      var.services[0].type == "tcp" ? boundary_target.tcp_with_creds[host.hostname].id : null
+    )
   }
 }
 
-# Boundary target for SSH services needing credentials
+# Boundary target for SSH services 
 resource "boundary_target" "ssh_with_creds" {
   for_each = { for service in var.services : service.name => service if service.type == "ssh" }
 
@@ -24,7 +24,7 @@ resource "boundary_target" "ssh_with_creds" {
   # ingress_worker_filter removed as it is not expected here
 }
 
-# Boundary target for TCP services with credentials
+# Boundary target for TCP services
 resource "boundary_target" "tcp_with_creds" {
   for_each = { for service in var.services : service.name => service if service.type == "tcp" }
 
@@ -39,21 +39,18 @@ resource "boundary_target" "tcp_with_creds" {
   ingress_worker_filter          = "\"vmware\" in \"/tags/platform\"" # Filter for workers with the "vmware" tag
 }
 
+# Boundary alias for services
 resource "boundary_alias_target" "service_alias" {
   for_each = {
-    for host_key, host in boundary_host_static.this : host_key => host
+    for host in boundary_host_static.this : host.id => host
   }
 
   name                      = "${each.value.name}_service_alias"
-  description               = "Alias for ${each.value.name} access"
+  description               = "Alias for ${each.value.hostname} access"
   scope_id                  = "global"
-
-  # Use the address from the hosts input as the alias value
-  value                     = lookup({ for host in var.hosts : host.hostname => host.address }, each.value.name, null)
-
-  # Ensure destination_id is correctly mapped based on the service type
+  value                     = each.value.address  # Use host address directly
   destination_id            = local.destination_ids[each.key]
-    
   authorize_session_host_id = each.value.id
 }
+
 

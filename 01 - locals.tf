@@ -9,16 +9,16 @@ locals {
 
   # Process services to ensure that only one credential source is used
   processed_services = [
-    for service in var.services : {
-      name              = service.name
-      type              = service.type
-      port              = service.port
-      use_existing_creds = lookup(service, "use_existing_creds", false)
-      use_vault_creds    = lookup(service, "use_vault_creds", false)
-      credential_source  = service.use_existing_creds ? "existing" : (service.use_vault_creds ? "vault" : null)
+    for i, host in var.hosts : {
+      hostname          = host.hostname
+      type              = var.services[i].type
+      port              = var.services[i].port
+      use_existing_creds = var.services[i].use_existing_creds
+      use_vault_creds    = var.services[i].use_vault_creds
+      credential_source  = var.services[i].use_existing_creds ? "existing" : (var.services[i].use_vault_creds ? "vault" : null)
 
       # Provide default path for SSH, but require user-specified path for others if using vault creds
-      credential_path = service.type == "ssh" && service.use_vault_creds ? coalesce(service.credential_path, "ssh/sign/boundary") : (service.use_vault_creds ? coalesce(service.credential_path, error("For ${service.name}, you must provide a credential path")) : null)
+      credential_path = var.services[i].type == "ssh" && var.services[i].use_vault_creds ? coalesce(var.services[i].credential_path, "ssh/sign/boundary") : (var.services[i].use_vault_creds ? coalesce(var.services[i].credential_path, error("For ${host.hostname}, you must provide a credential path")) : null)
     }
   ]
 
