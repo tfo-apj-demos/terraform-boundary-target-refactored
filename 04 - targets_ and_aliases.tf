@@ -34,7 +34,7 @@ resource "boundary_target" "tcp_with_creds" {
   host_source_ids = [boundary_host_set_static.this.id]
 
   # Broker TCP credentials if provided
-  brokered_credential_source_ids = local.processed_services[each.key].use_vault_creds ? [local.tcp_credential_library_ids[each.key]] : null
+  brokered_credential_source_ids = local.hostname_to_service_map[each.key].use_vault_creds ? [local.tcp_credential_library_ids[each.key]] : null
 }
 
 # Boundary alias for services

@@ -22,6 +22,11 @@ locals {
     }
   ]
 
+  # Map hostname to processed service object
+  hostname_to_service_map = {
+    for host in var.hosts : host.hostname => local.processed_services[0]
+  }
+
   # Map of TCP credential library IDs, merging existing or newly created
   tcp_credential_library_ids = merge(
     lookup(var.existing_infrastructure, "tcp_credential_libraries", {}),
