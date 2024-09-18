@@ -1,5 +1,5 @@
 locals {
-  service_type = lookup({ for service in var.services : service.name => service.type }, each.value.name, null)
+  service_type = lookup({ for service in var.services : service.name => service.type })
 }
 
 # Boundary target for SSH services needing credentials
