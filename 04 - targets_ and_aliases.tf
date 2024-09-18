@@ -1,4 +1,6 @@
-service_type = lookup({ for service in var.services : service.name => service.type }, each.value.name, null)
+locals {
+  service_type = lookup({ for service in var.services : service.name => service.type }, each.value.name, null)
+}
 
 # Boundary target for SSH services needing credentials
 resource "boundary_target" "ssh_with_creds" {
