@@ -5,7 +5,7 @@ locals {
   }
 
   # Check if any service needs credentials
-  services_needing_creds = length(flatten([for service in var.services : service.use_existing_creds || service.use_vault_creds ? [service] : []])) > 0
+  services_needing_creds = length(flatten([for service in var.services : lookup(service, "use_existing_creds", false) || lookup(service, "use_vault_creds", false) ? [service] : []])) > 0
 
   # Process services to ensure that only one credential source is used
   processed_services = [
@@ -13,7 +13,10 @@ locals {
       name              = service.name
       type              = service.type
       port              = service.port
-      credential_source = service.use_existing_creds ? "existing" : (service.use_vault_creds ? "vault" : null)
+      use_existing_creds = lookup(service, "use_existing_creds", false)
+      use_vault_creds    = lookup(service, "use_vault_creds", false)
+      credential_source  = service.use_existing_creds ? "existing" : (service.use_vault_creds ? "vault" : null)
+
       # Provide default path for SSH, but require user-specified path for others if using vault creds
       credential_path = service.type == "ssh" && service.use_vault_creds ? coalesce(service.credential_path, "ssh/sign/boundary") : (service.use_vault_creds ? coalesce(service.credential_path, error("For ${service.name}, you must provide a credential path")) : null)
     }
