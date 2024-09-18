@@ -42,13 +42,11 @@ resource "boundary_alias_target" "service_alias" {
   value                     = lookup({ for host in var.hosts : host.name => host.address }, each.value.name, null)
 
   # Dynamically set the destination_id based on the service type (TCP/SSH)
-  destination_id = contains([for service in var.services : service.name], each.value.name) ?
-    (
-      lookup({ for service in var.services : service.name => service.type }, each.value.name) == "tcp" ?
-        boundary_target.tcp_with_creds[each.key].id :
-        boundary_target.ssh_with_creds[each.key].id
-    )
-    : null
+  locals {
+    service_type = lookup({ for service in var.services : service.name => service.type }, each.value.name, null)
+  }
+
+  destination_id = local.service_type == "tcp" ? boundary_target.tcp_with_creds[each.key].id : local.service_type == "ssh" ? boundary_target.ssh_with_creds[each.key].id : null
 
   authorize_session_host_id = each.value.id
 }
