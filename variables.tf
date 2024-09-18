@@ -34,12 +34,11 @@ variable "hosts" {
 variable "services" {
   description = "List of services (SSH, TCP, etc.) that need to be exposed via Boundary."
   type = list(object({
-    name               = string                 # The name of the service (e.g., 'ssh', 'rdp', 'postgres')
-    type               = string                 # The type of service ('ssh' or 'tcp')
-    port               = number                 # The port number the service listens on
-    use_existing_creds = bool                   # Whether to use existing credential libraries
-    use_vault_creds    = bool                   # Whether to create new credential libraries via Vault
-    credential_path    = optional(string, null) # The Vault credential path (only if use_vault_creds = true)
+    type               = string  # The type of service ('ssh' or 'tcp')
+    port               = number  # The port number the service listens on
+    use_existing_creds = bool    # Whether to use existing credential libraries
+    use_vault_creds    = bool    # Whether to create new credential libraries via Vault
+    credential_path    = optional(string, null)  # The Vault credential path (only if use_vault_creds = true)
   }))
 
   validation {
