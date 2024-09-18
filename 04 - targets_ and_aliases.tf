@@ -48,8 +48,13 @@ resource "boundary_alias_target" "service_alias" {
   value                     = lookup({ for host in var.hosts : host.hostname => host.address }, each.value.name, null)
 
   # Ensure destination_id is correctly mapped based on the service type
-  destination_id            = contains(keys(boundary_target.tcp_with_creds), each.key) ? boundary_target.tcp_with_creds[each.key].id : contains(keys(boundary_target.ssh_with_creds), each.key) ? boundary_target.ssh_with_creds[each.key].id : null
-
+  #destination_id            = contains(keys(boundary_target.tcp_with_creds), each.key) ? boundary_target.tcp_with_creds[each.key].id : contains(keys(boundary_target.ssh_with_creds), each.key) ? boundary_target.ssh_with_creds[each.key].id : null
+  destination_id = contains(keys(boundary_target.tcp_with_creds), each.key) 
+    ? boundary_target.tcp_with_creds[each.key].id 
+    : contains(keys(boundary_target.ssh_with_creds), each.key) 
+    ? boundary_target.ssh_with_creds[each.key].id 
+    : null
+    
   authorize_session_host_id = each.value.id
 }
 

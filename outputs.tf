@@ -17,3 +17,10 @@ output "alias_destination_ids" {
     }
   }
 }
+
+output "alias_debug_each_key" {
+  value = { for host in boundary_host_static.this : host.name => {
+    tcp_id = lookup(boundary_target.tcp_with_creds, host.name, null),
+    ssh_id = lookup(boundary_target.ssh_with_creds, host.name, null)
+  }}
+}
