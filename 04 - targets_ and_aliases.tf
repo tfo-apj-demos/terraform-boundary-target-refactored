@@ -1,6 +1,8 @@
 locals {
-  service_type = lookup({ for service in var.services : service.name => service.type })
+  # Create a map of service types by host name
+  service_type_map = { for service in var.services : service.name => service.type }
 }
+
 
 # Boundary target for SSH services needing credentials
 resource "boundary_target" "ssh_with_creds" {
@@ -46,7 +48,7 @@ resource "boundary_alias_target" "service_alias" {
   value                     = lookup({ for host in var.hosts : host.name => host.address }, each.value.name, null)
 
   # Dynamically set the destination_id based on the service type (TCP/SSH)
-  destination_id = local.service_type == "tcp" ? boundary_target.tcp_with_creds[each.key].id : local.service_type == "ssh" ? boundary_target.ssh_with_creds[each.key].id : null
+  destination_id = local.service_type_map[each.key] == "tcp" ? boundary_target.tcp_with_creds[each.key].id : local.service_type_map[each.key] == "ssh" ? boundary_target.ssh_with_creds[each.key].id : null
 
   authorize_session_host_id = each.value.id
 }
