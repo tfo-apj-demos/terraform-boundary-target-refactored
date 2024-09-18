@@ -1,7 +1,9 @@
-service_type_map = {
+locals {
+  # Create a map of service types by host name
+  service_type_map = {
     for host in var.hosts : host.hostname => lookup({ for service in var.services : service.name => service.type }, host.hostname, null)
   }
-
+}
 
 # Boundary target for SSH services needing credentials
 resource "boundary_target" "ssh_with_creds" {
