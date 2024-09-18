@@ -28,39 +28,21 @@ resource "boundary_target" "tcp_with_creds" {
   ingress_worker_filter          = "\"vmware\" in \"/tags/platform\"" # Filter for workers with the "vmware" tag
 }
 
-# Boundary alias for TCP services without credentials
-resource "boundary_alias_target" "tcp_without_creds_alias" {
+# Boundary alias for all TCP services
+resource "boundary_alias_target" "tcp_alias" {
   for_each = {
     for host in boundary_host_static.this : host.hostname => host
-    if length([for service in local.processed_services : service if service.type == "tcp" && !service.use_vault_creds]) > 0
   }
 
-  name                      = "${each.value.name}_tcp_without_creds_alias"
-  description               = "Alias for ${each.value.name} TCP access without credentials"
+  name                      = "${each.value.name}_tcp_alias"
+  description               = "Alias for ${each.value.name} TCP access"
   scope_id                  = "global"
 
   # Use the address from the hosts input as the alias value
   value                     = lookup({ for host in var.hosts : host.hostname => host.address }, each.value.name, null)
 
-  destination_id            = boundary_target.tcp_without_creds[each.value.name].id
-  authorize_session_host_id = each.value.id
-}
-
-# Boundary alias for TCP services with credentials
-resource "boundary_alias_target" "tcp_with_creds_alias" {
-  for_each = {
-    for host in boundary_host_static.this : host.hostname => host
-    if length([for service in local.processed_services : service if service.type == "tcp" && service.use_vault_creds]) > 0
-  }
-
-  name                      = "${each.value.name}_tcp_with_creds_alias"
-  description               = "Alias for ${each.value.name} TCP access with credentials"
-  scope_id                  = "global"
-
-  # Use the address from the hosts input as the alias value
-  value                     = lookup({ for host in var.hosts : host.hostname => host.address }, each.value.name, null)
-
+  # Destination ID (always refers to tcp_with_creds as we don't have without_creds)
   destination_id            = boundary_target.tcp_with_creds[each.value.name].id
+
   authorize_session_host_id = each.value.id
 }
-
