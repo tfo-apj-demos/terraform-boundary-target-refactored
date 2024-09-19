@@ -12,12 +12,12 @@ resource "boundary_credential_store_vault" "this" {
 # Conditional creation of Vault credential library for TCP services
 resource "boundary_credential_library_vault" "tcp" {
   for_each = {
-    for host in var.hosts : host.hostname => host
+    for host in var.hosts : host.fqdn => host
     if var.services[0].type == "tcp" && var.services[0].use_vault_creds
   }
 
-  name                = "${var.hostname_prefix}-${each.value.hostname}-vault-cred-library"
-  description         = "Vault Credential Library for ${each.value.hostname}"
+  name                = "${var.hostname_prefix}-${each.value.fqdn}-vault-cred-library"
+  description         = "Vault Credential Library for ${each.value.fqdn}"
 
   # Check if a new credential store is created or use an existing one
   credential_store_id = length(boundary_credential_store_vault.this) > 0 ? boundary_credential_store_vault.this[0].id : var.existing_infrastructure.vault_credential_store_id
@@ -30,12 +30,12 @@ resource "boundary_credential_library_vault" "tcp" {
 # Conditional creation of Vault SSH certificate credential library
 resource "boundary_credential_library_vault_ssh_certificate" "ssh" {
   for_each = {
-    for host in var.hosts : host.hostname => host
+    for host in var.hosts : host.fqdn => host
     if var.services[0].type == "ssh" && var.services[0].use_vault_creds
   }
 
-  name                = "${var.hostname_prefix}-${each.value.hostname}-ssh-cert-library"
-  description         = "SSH Certificate Credential Library for ${each.value.hostname}"
+  name                = "${var.hostname_prefix}-${each.value.fqdn}-ssh-cert-library"
+  description         = "SSH Certificate Credential Library for ${each.value.fqdn}"
   credential_store_id = length(boundary_credential_store_vault.this) > 0 ? boundary_credential_store_vault.this[0].id : var.existing_infrastructure.vault_credential_store_id
   path                = var.services[0].credential_path
   username            = "ubuntu"  # You can make this dynamic based on the input if necessary

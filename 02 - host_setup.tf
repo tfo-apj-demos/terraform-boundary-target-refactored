@@ -18,11 +18,11 @@ resource "boundary_host_catalog_static" "this" {
 
 # Define static hosts, mapped by hostname
 resource "boundary_host_static" "this" {
-  for_each        = { for host in var.hosts : host.hostname => host }
+  for_each        = { for host in var.hosts : host.fqdn => host }
   type            = "static"
-  name            = each.value.hostname
+  name            = each.value.fqdn
   host_catalog_id = boundary_host_catalog_static.this.id
-  address         = each.value.address
+  address         = each.value.fqdn
 }
 
 # Host set for static hosts, mapping them to the catalog

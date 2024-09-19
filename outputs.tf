@@ -36,7 +36,3 @@ output "existing_infrastructure_debug" {
 output "processed_services_debug" {
   value = local.processed_services
 }
-
-output "generated_aliases_debug" {
-  value = local.generated_aliases
-}

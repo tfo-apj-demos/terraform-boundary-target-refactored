@@ -1,15 +1,15 @@
 locals {
   # Map destination IDs using host names
   destination_ids = {
-    for host in var.hosts : host.hostname => boundary_target.tcp_with_creds[host.hostname].id
+    for host in var.hosts : host.fqdne => boundary_target.tcp_with_creds[host.fqdn].id
   }
 }
 
 # Boundary target for SSH services
 resource "boundary_target" "ssh_with_creds" {
-  for_each = { for host in var.hosts : host.hostname => host if var.services[0].type == "ssh" }
+  for_each = { for host in var.hosts : host.fqdn => host if var.services[0].type == "ssh" }
 
-  name            = "${each.value.hostname} SSH Access"
+  name            = "${each.value.fqdn} SSH Access"
   type            = var.services[0].type
   default_port    = var.services[0].port
   scope_id        = data.boundary_scope.project.id
@@ -22,9 +22,9 @@ resource "boundary_target" "ssh_with_creds" {
 
 # Boundary target for TCP services
 resource "boundary_target" "tcp_with_creds" {
-  for_each = { for host in var.hosts : host.hostname => host if var.services[0].type == "tcp" }
+  for_each = { for host in var.hosts : host.fqdn => host if var.services[0].type == "tcp" }
 
-  name            = "${each.value.hostname} TCP Access"
+  name            = "${each.value.fqdn} TCP Access"
   type            = var.services[0].type
   default_port    = var.services[0].port
   scope_id        = data.boundary_scope.project.id
