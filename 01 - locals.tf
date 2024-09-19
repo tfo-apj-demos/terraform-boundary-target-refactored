@@ -30,14 +30,14 @@ locals {
   # Map of TCP credential library IDs, merging existing or newly created
   tcp_credential_library_ids = merge(
     lookup(var.existing_infrastructure, "tcp_credential_libraries", {}),
-    { for service in local.processed_services : service.name => boundary_credential_library_vault.tcp[service.name].id
+    { for service in local.processed_services : service.hostname => boundary_credential_library_vault.tcp[service.hostname].id
     if service.type == "tcp" && service.use_vault_creds }
   )
 
   # Map of SSH credential library IDs, merging existing or newly created
   ssh_credential_library_ids = merge(
     lookup(var.existing_infrastructure, "ssh_credential_libraries", {}),
-    { for service in local.processed_services : service.name => boundary_credential_library_vault_ssh_certificate.ssh[service.name].id
+    { for service in local.processed_services : service.hostname => boundary_credential_library_vault_ssh_certificate.ssh[service.hostname].id
     if service.type == "ssh" && service.use_vault_creds }
   )
 }
