@@ -1,6 +1,6 @@
 # Vault credential store for services needing credentials
 resource "boundary_credential_store_vault" "this" {
-  count         = local.services_needing_creds && lookup(var.existing_infrastructure, "vault_credential_store_id", "") == "" ? 1 : 0
+  count         = local.services_needing_creds ? 1 : 0
   name          = "Credential Store for ${var.hostname_prefix}"
   scope_id      = data.boundary_scope.project.id
   address       = var.vault_address
@@ -18,11 +18,14 @@ resource "boundary_credential_library_vault" "tcp" {
 
   name                = "${var.hostname_prefix}-${each.value.hostname}-vault-cred-library"
   description         = "Vault Credential Library for ${each.value.hostname}"
-  # If the vault credential store is created, reference it by index, else use the existing one from infrastructure
+
+  # Check if a new credential store is created or use an existing one
   credential_store_id = length(boundary_credential_store_vault.this) > 0 ? boundary_credential_store_vault.this[0].id : var.existing_infrastructure.vault_credential_store_id
+
   path                = var.services[0].credential_path
   http_method         = "GET"  # Depending on Vault API, this can be customized if needed
 }
+
 
 # Conditional creation of Vault SSH certificate credential library
 resource "boundary_credential_library_vault_ssh_certificate" "ssh" {
