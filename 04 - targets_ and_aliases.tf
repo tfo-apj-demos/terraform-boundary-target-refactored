@@ -1,7 +1,7 @@
 locals {
   # Map destination IDs using host names
   destination_ids = {
-    for host in var.hosts : host.fqdne => boundary_target.tcp_with_creds[host.fqdn].id
+    for host in var.hosts : host.fqdn => boundary_target.tcp_with_creds[host.fqdn].id
   }
 }
 
