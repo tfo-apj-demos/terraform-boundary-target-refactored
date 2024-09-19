@@ -18,7 +18,7 @@ locals {
       credential_source  = var.services[i].use_existing_creds ? "existing" : (var.services[i].use_vault_creds ? "vault" : null)
 
       # Provide default path for SSH, but require user-specified path for others if using vault creds
-      credential_path = var.services[i].type == "ssh" && var.services[i].use_vault_creds ? coalesce(var.services[i].credential_path, "ssh/sign/boundary") : (var.services[i].use_vault_creds ? coalesce(var.services[i].credential_path, error("For ${host.hostname}, you must provide a credential path")) : null)
+      credential_path = var.services[i].type == "ssh" && var.services[i].use_vault_creds ? coalesce(var.services[i].credential_path, "ssh/sign/boundary") : (var.services[i].use_vault_creds ? var.services[i].credential_path : null)
     }
   ]
 

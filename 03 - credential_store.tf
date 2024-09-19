@@ -12,15 +12,15 @@ resource "boundary_credential_store_vault" "this" {
 # Conditional creation of Vault credential library for TCP services
 resource "boundary_credential_library_vault" "tcp" {
   for_each = {
-    for service in var.services : service.name => service
-    if service.type == "tcp" && service.use_vault_creds
+    for host in var.hosts : host.hostname => host
+    if var.services[0].type == "tcp" && var.services[0].use_vault_creds
   }
 
-  name                = "${var.hostname_prefix}-${each.value.name}-vault-cred-library"
-  description         = "Vault Credential Library for ${each.value.name}"
-  credential_store_id = length(boundary_credential_store_vault.this) > 0 ? boundary_credential_store_vault.this[0].id : var.existing_infrastructure.vault_credential_store_id
-  path                = each.value.credential_path
-  http_method         = "GET" # Depending on Vault API, this can be customized if needed
+  name                = "${var.hostname_prefix}-${each.value.hostname}-vault-cred-library"
+  description         = "Vault Credential Library for ${each.value.hostname}"
+  credential_store_id = boundary_credential_store_vault.this[count.index].id
+  path                = var.services[0].credential_path
+  http_method         = "GET"  # Depending on Vault API, this can be customized if needed
 }
 
 # Conditional creation of Vault SSH certificate credential library
