@@ -18,7 +18,8 @@ resource "boundary_credential_library_vault" "tcp" {
 
   name                = "${var.hostname_prefix}-${each.value.hostname}-vault-cred-library"
   description         = "Vault Credential Library for ${each.value.hostname}"
-  credential_store_id = boundary_credential_store_vault.this[count.index].id
+  # If the vault credential store is created, reference it by index, else use the existing one from infrastructure
+  credential_store_id = length(boundary_credential_store_vault.this) > 0 ? boundary_credential_store_vault.this[0].id : var.existing_infrastructure.vault_credential_store_id
   path                = var.services[0].credential_path
   http_method         = "GET"  # Depending on Vault API, this can be customized if needed
 }
@@ -26,14 +27,14 @@ resource "boundary_credential_library_vault" "tcp" {
 # Conditional creation of Vault SSH certificate credential library
 resource "boundary_credential_library_vault_ssh_certificate" "ssh" {
   for_each = {
-    for service in var.services : service.name => service
-    if service.type == "ssh" && service.use_vault_creds
+    for host in var.hosts : host.hostname => host
+    if var.services[0].type == "ssh" && var.services[0].use_vault_creds
   }
 
-  name                = "${var.hostname_prefix}-${each.value.name}-ssh-cert-library"
-  description         = "SSH Certificate Credential Library for ${each.value.name}"
+  name                = "${var.hostname_prefix}-${each.value.hostname}-ssh-cert-library"
+  description         = "SSH Certificate Credential Library for ${each.value.hostname}"
   credential_store_id = length(boundary_credential_store_vault.this) > 0 ? boundary_credential_store_vault.this[0].id : var.existing_infrastructure.vault_credential_store_id
-  path                = each.value.credential_path
+  path                = var.services[0].credential_path
   username            = "ubuntu"  # You can make this dynamic based on the input if necessary
   key_type            = "ed25519" # Default key type, can be customized per service
 
