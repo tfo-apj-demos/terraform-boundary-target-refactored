@@ -24,3 +24,15 @@ output "alias_debug_each_key" {
     ssh_id = lookup(boundary_target.ssh_with_creds, host.name, null)
   }}
 }
+
+output "services_needing_creds_debug" {
+  value = local.services_needing_creds
+}
+
+output "existing_infrastructure_debug" {
+  value = var.existing_infrastructure
+}
+
+output "processed_services_debug" {
+  value = local.processed_services
+}
