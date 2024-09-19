@@ -17,6 +17,7 @@ resource "boundary_target" "ssh_with_creds" {
 
   # Inject SSH credentials if provided
   injected_application_credential_source_ids = local.processed_services[each.key].use_vault_creds ? [local.ssh_credential_library_ids[each.key]] : null
+  ingress_worker_filter     = "\"vmware\" in \"/tags/platform\""  # Filter for workers with the "vmware" tag
 }
 
 # Boundary target for TCP services
@@ -31,6 +32,7 @@ resource "boundary_target" "tcp_with_creds" {
 
   # Broker TCP credentials if provided
   brokered_credential_source_ids = local.hostname_to_service_map[each.key].use_vault_creds ? [local.tcp_credential_library_ids[each.key]] : null
+  ingress_worker_filter     = "\"vmware\" in \"/tags/platform\""  # Filter for workers with the "vmware" tag
 }
 
 # Boundary alias for TCP and SSH services
