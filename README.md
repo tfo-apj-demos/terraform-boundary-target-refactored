@@ -45,6 +45,9 @@ module "tcp_target_with_existing_creds" {
     }
   }
 }
+```
+
+### Example: SSH Target with Dynamically Generated Credentials
 
 ```hcl
 module "ssh_target_with_vault_creds" {
@@ -67,31 +70,35 @@ module "ssh_target_with_vault_creds" {
     credential_path    = "ssh/sign/admin-role"
   }]
 }
+```
 
-Example: SSH Target with Dynamically Generated Credentials
+### Example: TCP Target with LDAP Credentials from Vault
+
 ```hcl
-module "ssh_target_with_vault_creds" {
+module "tcp_target_with_ldap_creds" {
   source  = "github.com/tfo-apj-demos/terraform-boundary-target-refactored"
 
-  project_name           = "linux_admin"
-  hostname_prefix        = "Linux Admin Access"
+  project_name           = "shared_services"
+  hostname_prefix        = "Windows RDP Access"
   credential_store_token = vault_token.this.client_token
   vault_address          = "https://vault.example.com:8200"
 
   hosts = [{
-    fqdn = "linux-admin-01.example.com"
+    fqdn = "rds-01.example.com"
   }]
 
   services = [{
-    type               = "ssh"
-    port               = 22
+    type               = "tcp"
+    port               = 3389
     use_existing_creds = false
     use_vault_creds    = true
-    credential_path    = "ssh/sign/admin-role"
+    credential_path    = "ldap/creds/rdp-role"
   }]
 }
+```
 
-Example: FQDN Alias for a TCP Target Without Credentials
+### Example: FQDN Alias for a TCP Target Without Credentials
+
 ```hcl
 module "tcp_target_without_creds" {
   source  = "github.com/tfo-apj-demos/terraform-boundary-target-refactored"
@@ -110,3 +117,5 @@ module "tcp_target_without_creds" {
     use_vault_creds    = false
   }]
 }
+```
+
