@@ -44,7 +44,7 @@ resource "boundary_alias_target" "service_alias" {
   scope_id                  = "global"
 
   # Use the address from the hosts input as the alias value
-  value                     = lookup({ for host in var.hosts : host.hostname => host.address }, each.value.name, null)
+  value                     = lookup({ for host in var.hosts : host.fqdn => host.fqdn }, each.value.name, null)
 
   destination_id            = local.destination_ids[each.value.name]  # Refer to the correct destination ID
   authorize_session_host_id = each.value.id

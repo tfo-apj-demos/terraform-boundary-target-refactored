@@ -1,8 +1,8 @@
 locals {
   # Automatically generate alias based on the hostname of the machine
-  generated_aliases = {
-    for host in var.hosts : host.hostname => "${host.hostname}.hashicorp.local"
-  }
+  #generated_aliases = {
+  #  for host in var.hosts : host.hostname => "${host.hostname}.hashicorp.local"
+  #}
 
   # Check if any service needs credentials
   services_needing_creds = length(flatten([for service in var.services : lookup(service, "use_existing_creds", false) || lookup(service, "use_vault_creds", false) ? [service] : []])) > 0

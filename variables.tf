@@ -25,8 +25,7 @@ variable "credential_store_token" {
 
 variable "hosts" {
   type = list(object({
-    hostname = string
-    address  = string
+    fqdn = string
   }))
   description = "The hosts to register as Boundary targets."
 }
