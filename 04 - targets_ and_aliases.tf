@@ -9,7 +9,7 @@ locals {
 resource "boundary_target" "ssh_with_creds" {
   for_each = { for host in var.hosts : host.fqdn => host if var.services[0].type == "ssh" }
 
-  name            = "${each.value.fqdn} SSH Access"
+  name            = var.hostname_prefix
   type            = var.services[0].type
   default_port    = var.services[0].port
   scope_id        = data.boundary_scope.project.id
@@ -24,7 +24,7 @@ resource "boundary_target" "ssh_with_creds" {
 resource "boundary_target" "tcp_with_creds" {
   for_each = { for host in var.hosts : host.fqdn => host if var.services[0].type == "tcp" }
 
-  name            = "${each.value.fqdn} TCP Access"
+  name            = var.hostname_prefix
   type            = var.services[0].type
   default_port    = var.services[0].port
   scope_id        = data.boundary_scope.project.id
@@ -36,10 +36,10 @@ resource "boundary_target" "tcp_with_creds" {
 }
 
 # Boundary alias for TCP and SSH services
-resource "boundary_alias_target" "service_alias" {
+resource "boundary_alias_target" "target_alias" {
   for_each = boundary_host_static.this
 
-  name                      = "${each.value.name}_service_alias"
+  name                      = "${each.value.name}"
   description               = "Alias for ${each.value.name} access"
   scope_id                  = "global"
 
