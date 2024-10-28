@@ -14,18 +14,18 @@ data "boundary_scope" "project" {
   name     = var.project_name
 }
 
-# Boundary static host catalog
+# Boundary static host catalog with unique name
 resource "boundary_host_catalog_static" "this" {
   count       = var.use_host_set ? 1 : 0
-  name        = "Host Catalog for ${var.target_type} Targets"
-  description = "Catalog for ${var.target_type} Targets"
+  name        = "${var.target_name} Host Catalog"
+  description = "Host Catalog for ${var.target_name}"
   scope_id    = data.boundary_scope.project.id
 }
 
 resource "boundary_host_static" "this" {
   count           = var.use_host_set ? length(var.hosts) : 0
   type            = "static"
-  name            = var.hosts[count.index]
+  name            = "${var.target_name} Host ${count.index}"
   host_catalog_id = boundary_host_catalog_static.this[0].id
   address         = var.hosts[count.index]
 }
@@ -33,15 +33,15 @@ resource "boundary_host_static" "this" {
 resource "boundary_host_set_static" "this" {
   count           = var.use_host_set ? 1 : 0
   type            = "static"
-  name            = "${var.target_type}-servers"
+  name            = "${var.target_name} Host Set"
   host_catalog_id = boundary_host_catalog_static.this[0].id
   host_ids        = [for host in boundary_host_static.this : host.id]
 }
 
-# Conditional Vault credential store
+# Vault credential store with unique name
 resource "boundary_credential_store_vault" "this" {
   count         = local.use_vault_creds ? 1 : 0
-  name          = "Vault Credential Store for ${var.target_type}"
+  name          = "${var.target_name} Credential Store"
   scope_id      = data.boundary_scope.project.id
   address       = var.vault_address
   token         = var.credential_store_token
@@ -53,7 +53,7 @@ resource "boundary_credential_store_vault" "this" {
 resource "boundary_credential_library_vault" "tcp" {
   for_each = { for host in var.hosts : host => host if var.target_type == "tcp" && local.use_vault_creds }
 
-  name                = "${each.key}-tcp-vault-cred-library"
+  name                = "${var.target_name} TCP Vault Credential Library ${each.key}"
   description         = "Vault TCP Credential Library for ${each.key}"
   credential_store_id = boundary_credential_store_vault.this[0].id
   path                = var.credential_path
@@ -63,7 +63,7 @@ resource "boundary_credential_library_vault" "tcp" {
 resource "boundary_credential_library_vault_ssh_certificate" "ssh" {
   for_each = { for host in var.hosts : host => host if var.target_type == "ssh" && local.use_vault_creds }
 
-  name                = "${each.key}-ssh-cert-library"
+  name                = "${var.target_name} SSH Cert Library ${each.key}"
   description         = "SSH Vault Credential Library for ${each.key}"
   credential_store_id = boundary_credential_store_vault.this[0].id
   path                = var.credential_path
@@ -72,10 +72,11 @@ resource "boundary_credential_library_vault_ssh_certificate" "ssh" {
   extensions          = { permit-pty = "" }
 }
 
-# Boundary Target for TCP or SSH
+# Boundary Target for TCP or SSH with unique name
 resource "boundary_target" "this" {
   count           = length(var.hosts)
-  name            = "${var.target_type}-target-${count.index}"
+  name            = "${var.target_name} Target ${count.index}"
+  description     = "Boundary target for ${var.target_name}"
   type            = var.target_type
   default_port    = var.port
   scope_id        = data.boundary_scope.project.id
@@ -94,4 +95,15 @@ resource "boundary_target" "this" {
   ) ? [boundary_credential_library_vault.tcp[var.hosts[count.index]].id] : null
 
   ingress_worker_filter = "\"vmware\" in \"/tags/platform\""
+}
+
+# Boundary Target Alias with unique name
+resource "boundary_alias_target" "alias" {
+  count                    = length(var.hosts)
+  name                     = "${var.target_name} Alias ${count.index}"
+  description              = "Alias for ${var.target_name} Target ${count.index}"
+  scope_id                 = data.boundary_scope.org.id
+  value                    = "${var.target_name} Alias ${count.index}"
+  destination_id           = boundary_target.this[count.index].id
+  authorize_session_host_id = var.use_host_set ? boundary_host_static.this[count.index].id : null
 }

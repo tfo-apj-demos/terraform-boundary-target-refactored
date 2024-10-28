@@ -60,3 +60,8 @@ variable "use_credentials" {
   description = "If true, creates a credential store and library for the target. If false, no credentials are used."
   default     = true
 }
+
+variable "target_name" {
+  type        = string
+  description = "A unique name for the target, used to differentiate resources in the module."
+}
