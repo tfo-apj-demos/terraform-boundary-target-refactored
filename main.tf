@@ -85,14 +85,16 @@ resource "boundary_target" "this" {
   # Conditional injection based on credential source
   injected_application_credential_source_ids = (
     local.use_vault_creds && var.target_type == "ssh" && var.target_mode == "single"
-  ) ? compact([lookup(boundary_credential_library_vault_ssh_certificate.ssh, var.hosts[0], "")]) : null
+  ) ? compact([lookup(boundary_credential_library_vault_ssh_certificate.ssh, var.hosts[0], "").id]) : null
 
   brokered_credential_source_ids = (
     local.use_vault_creds && var.target_type == "tcp" && var.target_mode == "single"
-  ) ? compact([lookup(boundary_credential_library_vault.tcp, var.hosts[0], "")]) : null
+  ) ? compact([lookup(boundary_credential_library_vault.tcp, var.hosts[0], "").id]) : null
 
   ingress_worker_filter = "\"vmware\" in \"/tags/platform\""
 }
+
+
 
 # Boundary Target Alias
 resource "boundary_alias_target" "alias" {
