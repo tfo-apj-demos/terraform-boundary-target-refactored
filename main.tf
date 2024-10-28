@@ -1,6 +1,7 @@
 # Local values for credential configuration based on inputs
 locals {
   use_vault_creds = var.credential_source == "vault" && var.use_credentials
+  credential_store_id = var.existing_credential_store_id != null ? var.existing_credential_store_id : boundary_credential_store_vault.this[0].id
 }
 
 # Data Sources to get the organizational and project scopes
@@ -41,7 +42,7 @@ resource "boundary_host_set_static" "this" {
 
 # Vault credential store
 resource "boundary_credential_store_vault" "this" {
-  count         = local.use_vault_creds ? 1 : 0
+  count         = local.use_vault_creds && var.existing_credential_store_id == null ? 1 : 0
   name          = "${var.target_name} Credential Store"
   scope_id      = data.boundary_scope.project.id
   address       = var.vault_address
@@ -56,7 +57,7 @@ resource "boundary_credential_library_vault" "tcp" {
 
   name                = "${var.target_name} TCP Vault Credential Library ${each.key}"
   description         = "Vault TCP Credential Library for ${each.key}"
-  credential_store_id = boundary_credential_store_vault.this[0].id
+  credential_store_id = local.credential_store_id
   path                = var.credential_path
   http_method         = "GET"
 }
@@ -66,7 +67,7 @@ resource "boundary_credential_library_vault_ssh_certificate" "ssh" {
 
   name                = "${var.target_name} SSH Cert Library ${each.key}"
   description         = "SSH Vault Credential Library for ${each.key}"
-  credential_store_id = boundary_credential_store_vault.this[0].id
+  credential_store_id = local.credential_store_id
   path                = var.credential_path
   username            = "ubuntu"
   key_type            = "ed25519"
