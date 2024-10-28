@@ -101,5 +101,5 @@ resource "boundary_alias_target" "alias" {
   scope_id                 = "global"
   value                    = "${var.target_name} Alias"
   destination_id           = boundary_target.this.id
-  authorize_session_host_id = boundary_host_set_static.this.id
+  authorize_session_host_id = element([for host in boundary_host_static.this : host.id], 0)
 }
