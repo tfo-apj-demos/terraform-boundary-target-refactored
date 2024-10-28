@@ -102,7 +102,7 @@ resource "boundary_alias_target" "alias" {
   count                    = var.target_mode == "single" ? length(var.hosts) : 1
   name                     = var.target_mode == "single" ? "${var.hosts[count.index]} Alias" : "${var.target_name} Alias"
   description              = var.target_mode == "single" ? "Alias for ${var.hosts[count.index]}" : "Alias for Group Target ${var.target_name}"
-  scope_id                 = data.boundary_scope.project.id
+  scope_id                 = "global"
   value                    = var.target_mode == "single" ? "${var.hosts[count.index]}" : "${var.target_name} Alias"
   destination_id           = boundary_target.this[count.index].id
   authorize_session_host_id = var.use_host_set && var.target_mode == "single" ? boundary_host_static.this[count.index].id : null
