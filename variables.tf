@@ -71,3 +71,9 @@ variable "target_mode" {
   description = "Mode for target creation: 'single' for each host individually, 'group' for a group of hosts."
   default     = "single"
 }
+
+variable "alias_name" {
+  type        = string
+  description = "The name for the target alias. This can be set explicitly to control how the alias appears."
+  default     = ""
+}
