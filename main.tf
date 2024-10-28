@@ -85,8 +85,13 @@ resource "boundary_target" "this" {
   address         = !var.use_host_set ? var.hosts[count.index] : null
 
   # Conditional injection based on credential source
-  injected_application_credential_source_ids = local.use_vault_creds && var.target_type == "ssh" ? compact([lookup(boundary_credential_library_vault_ssh_certificate.ssh, var.hosts[count.index], "")]) : null
-  brokered_credential_source_ids             = local.use_vault_creds && var.target_type == "tcp" ? compact([lookup(boundary_credential_library_vault.tcp, var.hosts[count.index], "")]) : null
+  injected_application_credential_source_ids = (
+    local.use_vault_creds && var.target_type == "ssh" && contains(keys(boundary_credential_library_vault_ssh_certificate.ssh), var.hosts[count.index])
+  ) ? [boundary_credential_library_vault_ssh_certificate.ssh[var.hosts[count.index]].id] : null
+
+  brokered_credential_source_ids = (
+    local.use_vault_creds && var.target_type == "tcp" && contains(keys(boundary_credential_library_vault.tcp), var.hosts[count.index])
+  ) ? [boundary_credential_library_vault.tcp[var.hosts[count.index]].id] : null
 
   ingress_worker_filter = "\"vmware\" in \"/tags/platform\""
 }
