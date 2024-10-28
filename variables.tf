@@ -48,3 +48,9 @@ variable "target_type" {
   description = "Type of Boundary target. Options: 'ssh', 'tcp'."
   default     = "tcp"
 }
+
+variable "use_host_set" {
+  type        = bool
+  description = "If true, create a host set and use it in host_source_ids for the target. If false, use a single address per target."
+  default     = true
+}
