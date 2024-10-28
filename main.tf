@@ -102,7 +102,7 @@ resource "boundary_alias_target" "alias" {
   count                    = length(var.hosts)
   name                     = "${var.target_name} Alias ${count.index}"
   description              = "Alias for ${var.target_name} Target ${count.index}"
-  scope_id                 = data.boundary_scope.org.id
+  scope_id                 = "global"
   value                    = "${var.target_name} Alias ${count.index}"
   destination_id           = boundary_target.this[count.index].id
   authorize_session_host_id = var.use_host_set ? boundary_host_static.this[count.index].id : null
