@@ -14,7 +14,7 @@ data "boundary_scope" "project" {
   name     = var.project_name
 }
 
-# Boundary static host catalog with unique name
+# Boundary static host catalog
 resource "boundary_host_catalog_static" "this" {
   count       = var.use_host_set ? 1 : 0
   name        = "${var.target_name} Host Catalog"
@@ -25,20 +25,20 @@ resource "boundary_host_catalog_static" "this" {
 resource "boundary_host_static" "this" {
   count           = var.use_host_set ? length(var.hosts) : 0
   type            = "static"
-  name            = "${var.target_name} Host ${count.index}"
+  name            = var.hosts[count.index]
   host_catalog_id = boundary_host_catalog_static.this[0].id
   address         = var.hosts[count.index]
 }
 
 resource "boundary_host_set_static" "this" {
-  count           = var.use_host_set ? 1 : 0
+  count           = var.target_mode == "group" && var.use_host_set ? 1 : 0
   type            = "static"
   name            = "${var.target_name} Host Set"
   host_catalog_id = boundary_host_catalog_static.this[0].id
   host_ids        = [for host in boundary_host_static.this : host.id]
 }
 
-# Vault credential store with unique name
+# Vault credential store
 resource "boundary_credential_store_vault" "this" {
   count         = local.use_vault_creds ? 1 : 0
   name          = "${var.target_name} Credential Store"
@@ -72,18 +72,18 @@ resource "boundary_credential_library_vault_ssh_certificate" "ssh" {
   extensions          = { permit-pty = "" }
 }
 
-# Boundary Target for TCP or SSH with unique name
+# Boundary Target for TCP or SSH
 resource "boundary_target" "this" {
-  count           = length(var.hosts)
-  name            = "${var.target_name} Target ${count.index}"
-  description     = "Boundary target for ${var.target_name}"
+  count           = var.target_mode == "single" ? length(var.hosts) : 1
+  name            = var.target_mode == "single" ? "${var.hosts[count.index]}" : "${var.target_name} Target"
+  description     = var.target_mode == "single" ? "Target for ${var.hosts[count.index]}" : "Group Target for ${var.target_name}"
   type            = var.target_type
   default_port    = var.port
   scope_id        = data.boundary_scope.project.id
 
   # Conditionally use host set or address for target
-  host_source_ids = var.use_host_set ? [boundary_host_set_static.this[0].id] : null
-  address         = !var.use_host_set ? var.hosts[count.index] : null
+  host_source_ids = var.target_mode == "group" && var.use_host_set ? [boundary_host_set_static.this[0].id] : null
+  address         = var.target_mode == "single" && !var.use_host_set ? var.hosts[count.index] : null
 
   # Conditional injection based on credential source
   injected_application_credential_source_ids = (
@@ -99,11 +99,11 @@ resource "boundary_target" "this" {
 
 # Boundary Target Alias with unique name
 resource "boundary_alias_target" "alias" {
-  count                    = length(var.hosts)
-  name                     = "${var.target_name} Alias ${count.index}"
-  description              = "Alias for ${var.target_name} Target ${count.index}"
-  scope_id                 = "global"
-  value                    = "${var.target_name} Alias ${count.index}"
+  count                    = var.target_mode == "single" ? length(var.hosts) : 1
+  name                     = var.target_mode == "single" ? "${var.hosts[count.index]} Alias" : "${var.target_name} Alias"
+  description              = var.target_mode == "single" ? "Alias for ${var.hosts[count.index]}" : "Alias for Group Target ${var.target_name}"
+  scope_id                 = data.boundary_scope.project.id
+  value                    = var.target_mode == "single" ? "${var.hosts[count.index]}" : "${var.target_name} Alias"
   destination_id           = boundary_target.this[count.index].id
-  authorize_session_host_id = var.use_host_set ? boundary_host_static.this[count.index].id : null
+  authorize_session_host_id = var.use_host_set && var.target_mode == "single" ? boundary_host_static.this[count.index].id : null
 }

@@ -65,3 +65,9 @@ variable "target_name" {
   type        = string
   description = "A unique name for the target, used to differentiate resources in the module."
 }
+
+variable "target_mode" {
+  type        = string
+  description = "Mode for target creation: 'single' for each host individually, 'group' for a group of hosts."
+  default     = "single"
+}
