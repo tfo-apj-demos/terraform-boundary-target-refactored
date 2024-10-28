@@ -16,25 +16,26 @@ data "boundary_scope" "project" {
 
 # Boundary static host catalog
 resource "boundary_host_catalog_static" "this" {
-  count       = var.use_host_set ? 1 : 0
   name        = "${var.target_name} Host Catalog"
   description = "Host Catalog for ${var.target_name}"
   scope_id    = data.boundary_scope.project.id
 }
 
+# Define hosts based on provided host list
 resource "boundary_host_static" "this" {
-  count           = var.use_host_set ? length(var.hosts) : 0
+  for_each        = toset(var.hosts)
   type            = "static"
-  name            = var.hosts[count.index]
-  host_catalog_id = boundary_host_catalog_static.this[0].id
-  address         = var.hosts[count.index]
+  name            = "${each.key}"
+  host_catalog_id = boundary_host_catalog_static.this.id
+  address         = each.key
 }
 
+# Host set that includes all specified hosts, even if it's a single host
 resource "boundary_host_set_static" "this" {
-  count           = var.target_mode == "group" && var.use_host_set ? 1 : 0
   type            = "static"
   name            = "${var.target_name} Host Set"
-  host_catalog_id = boundary_host_catalog_static.this[0].id
+  description     = "Host Set for ${var.target_name}"
+  host_catalog_id = boundary_host_catalog_static.this.id
   host_ids        = [for host in boundary_host_static.this : host.id]
 }
 
@@ -72,18 +73,14 @@ resource "boundary_credential_library_vault_ssh_certificate" "ssh" {
   extensions          = { permit-pty = "" }
 }
 
-# Boundary Target for TCP or SSH
+# Boundary Target for TCP or SSH, referencing the host set
 resource "boundary_target" "this" {
-  count           = var.target_mode == "single" ? length(var.hosts) : 1
-  name            = var.target_mode == "single" ? "${var.hosts[count.index]}" : "${var.target_name} Target"
-  description     = var.target_mode == "single" ? "Target for ${var.hosts[count.index]}" : "Group Target for ${var.target_name}"
+  name            = "${var.target_name} Target"
+  description     = "Boundary target for ${var.target_name}"
   type            = var.target_type
   default_port    = var.port
   scope_id        = data.boundary_scope.project.id
-
-  # Conditionally use host set or address for target
-  host_source_ids = var.target_mode == "group" && var.use_host_set ? [boundary_host_set_static.this[0].id] : null
-  address         = var.target_mode == "single" && !var.use_host_set ? var.hosts[count.index] : null
+  host_source_ids = [boundary_host_set_static.this.id] # References the host set, even if it's one host
 
   # Conditional injection based on credential source
   injected_application_credential_source_ids = (
@@ -97,12 +94,12 @@ resource "boundary_target" "this" {
   ingress_worker_filter = "\"vmware\" in \"/tags/platform\""
 }
 
-# Boundary Target Alias with unique name
+# Boundary Target Alias
 resource "boundary_alias_target" "alias" {
-  count                    = var.target_mode == "single" ? length(var.hosts) : 1
-  name                     = var.target_mode == "single" ? "${var.hosts[count.index]}" : "${var.target_name}"
+  name                     = "${var.target_name} Alias"
+  description              = "Alias for ${var.target_name} Target"
   scope_id                 = "global"
-  value                    = var.target_mode == "single" ? "${var.hosts[count.index]}" : "${var.target_name} Alias"
-  destination_id           = boundary_target.this[count.index].id
-  authorize_session_host_id = var.use_host_set && var.target_mode == "single" ? boundary_host_static.this[count.index].id : null
+  value                    = "${var.target_name} Alias"
+  destination_id           = boundary_target.this.id
+  authorize_session_host_id = boundary_host_set_static.this.id
 }
