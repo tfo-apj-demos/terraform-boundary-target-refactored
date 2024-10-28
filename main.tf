@@ -96,10 +96,9 @@ resource "boundary_target" "this" {
 
 # Boundary Target Alias
 resource "boundary_alias_target" "alias" {
-  name                     = "${var.target_name} Alias"
-  description              = "Alias for ${var.target_name} Target"
+  name                     = "${var.target_name}"
   scope_id                 = "global"
-  value                    = "${var.target_name} Alias"
+  value                    = "${var.target_name}"
   destination_id           = boundary_target.this.id
   authorize_session_host_id = element([for host in boundary_host_static.this : host.id], 0)
 }
