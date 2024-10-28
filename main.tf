@@ -1,7 +1,7 @@
 # Local values for credential configuration based on inputs
 locals {
   use_vault_creds = var.credential_source == "vault" && var.use_credentials
-  credential_store_id = var.existing_credential_store_id != null ? var.existing_credential_store_id : boundary_credential_store_vault.this[0].id
+  credential_store_id = var.existing_credential_store_id != null ? var.existing_credential_store_id :  (length(boundary_credential_store_vault.this) > 0 ? boundary_credential_store_vault.this[0].id : null)
 }
 
 # Data Sources to get the organizational and project scopes
