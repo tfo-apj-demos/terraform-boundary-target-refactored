@@ -14,31 +14,31 @@ data "boundary_scope" "project" {
   name     = var.project_name
 }
 
-# Boundary static host catalog
+# Conditional creation of Boundary static host catalog and hosts if using host set
 resource "boundary_host_catalog_static" "this" {
+  count       = var.use_host_set ? 1 : 0
   name        = "Host Catalog for ${var.target_type} Targets"
   description = "Catalog for ${var.target_type} Targets"
   scope_id    = data.boundary_scope.project.id
 }
 
-# Static host configuration
 resource "boundary_host_static" "this" {
-  for_each        = toset(var.hosts)
+  count           = var.use_host_set ? length(var.hosts) : 0
   type            = "static"
-  name            = each.key
-  host_catalog_id = boundary_host_catalog_static.this.id
-  address         = each.key
+  name            = var.hosts[count.index]
+  host_catalog_id = boundary_host_catalog_static.this[0].id
+  address         = var.hosts[count.index]
 }
 
-# Static host set
 resource "boundary_host_set_static" "this" {
+  count           = var.use_host_set ? 1 : 0
   type            = "static"
   name            = "${var.target_type}-servers"
-  host_catalog_id = boundary_host_catalog_static.this.id
+  host_catalog_id = boundary_host_catalog_static.this[0].id
   host_ids        = [for host in boundary_host_static.this : host.id]
 }
 
-# Conditional Vault credential store
+# Vault credential store for services needing credentials
 resource "boundary_credential_store_vault" "this" {
   count         = local.use_vault_creds ? 1 : 0
   name          = "Vault Credential Store for ${var.target_type}"
@@ -74,16 +74,19 @@ resource "boundary_credential_library_vault_ssh_certificate" "ssh" {
 
 # Boundary Target for TCP or SSH
 resource "boundary_target" "this" {
-  for_each        = toset(var.hosts)
-  name            = "${var.target_type}-target-${each.key}"
+  count           = length(var.hosts)
+  name            = "${var.target_type}-target-${count.index}"
   type            = var.target_type
   default_port    = var.port
   scope_id        = data.boundary_scope.project.id
-  host_source_ids = [boundary_host_set_static.this.id]
+
+  # Conditionally use host set or address for target
+  host_source_ids = var.use_host_set ? [boundary_host_set_static.this[0].id] : null
+  address         = !var.use_host_set ? var.hosts[count.index] : null
 
   # Conditional injection based on credential source
-  injected_application_credential_source_ids = local.use_vault_creds && var.target_type == "ssh" ? [lookup(boundary_credential_library_vault_ssh_certificate.ssh, each.key, null)] : null
-  brokered_credential_source_ids             = local.use_vault_creds && var.target_type == "tcp" ? [lookup(boundary_credential_library_vault.tcp, each.key, null)] : null
+  injected_application_credential_source_ids = local.use_vault_creds && var.target_type == "ssh" ? compact([lookup(boundary_credential_library_vault_ssh_certificate.ssh, var.hosts[count.index], "")]) : null
+  brokered_credential_source_ids             = local.use_vault_creds && var.target_type == "tcp" ? compact([lookup(boundary_credential_library_vault.tcp, var.hosts[count.index], "")]) : null
 
   ingress_worker_filter = "\"vmware\" in \"/tags/platform\""
 }
