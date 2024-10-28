@@ -1,6 +1,6 @@
 # Local values for credential configuration based on inputs
 locals {
-  use_vault_creds = var.credential_source == "vault"
+  use_vault_creds = var.credential_source == "vault" && var.use_credentials
 }
 
 # Data Sources to get the organizational and project scopes
@@ -14,7 +14,7 @@ data "boundary_scope" "project" {
   name     = var.project_name
 }
 
-# Conditional creation of Boundary static host catalog and hosts if using host set
+# Boundary static host catalog
 resource "boundary_host_catalog_static" "this" {
   count       = var.use_host_set ? 1 : 0
   name        = "Host Catalog for ${var.target_type} Targets"
@@ -38,7 +38,7 @@ resource "boundary_host_set_static" "this" {
   host_ids        = [for host in boundary_host_static.this : host.id]
 }
 
-# Vault credential store for services needing credentials
+# Conditional Vault credential store
 resource "boundary_credential_store_vault" "this" {
   count         = local.use_vault_creds ? 1 : 0
   name          = "Vault Credential Store for ${var.target_type}"

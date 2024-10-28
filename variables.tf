@@ -54,3 +54,9 @@ variable "use_host_set" {
   description = "If true, create a host set and use it in host_source_ids for the target. If false, use a single address per target."
   default     = true
 }
+
+variable "use_credentials" {
+  type        = bool
+  description = "If true, creates a credential store and library for the target. If false, no credentials are used."
+  default     = true
+}
