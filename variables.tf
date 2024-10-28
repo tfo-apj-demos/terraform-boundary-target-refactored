@@ -77,3 +77,9 @@ variable "alias_name" {
   description = "The name for the target alias. This can be set explicitly to control how the alias appears."
   default     = ""
 }
+
+variable "existing_credential_store_id" {
+  type        = string
+  description = "Optional ID of an existing Vault credential store to use. If provided, a new credential store will not be created."
+  default     = null
+}
