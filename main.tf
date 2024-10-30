@@ -49,6 +49,11 @@ resource "boundary_credential_store_vault" "this" {
   token         = var.credential_store_token
   namespace     = var.vault_namespace != "" ? var.vault_namespace : null
   worker_filter = "\"vmware\" in \"/tags/platform\""
+
+  # Ignore changes to the worker_filter attribute to avoid unnecessary updates. This may be a bug in the provider.
+  lifecycle {
+    ignore_changes = [worker_filter]
+  }
 }
 
 # Conditional TCP or SSH Vault Credential Library
