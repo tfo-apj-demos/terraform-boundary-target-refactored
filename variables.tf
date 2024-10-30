@@ -83,3 +83,9 @@ variable "existing_credential_store_id" {
   description = "Optional ID of an existing Vault credential store to use. If provided, a new credential store will not be created."
   default     = null
 }
+
+variable "existing_ssh_credential_libraries" {
+  type        = map(string)
+  description = "Map of existing SSH credential library IDs keyed by host FQDN. Used when existing credentials are provided."
+  default     = {}
+}
