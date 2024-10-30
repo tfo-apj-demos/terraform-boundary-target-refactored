@@ -115,13 +115,12 @@ resource "boundary_target" "this" {
   ingress_worker_filter = "\"vmware\" in \"/tags/platform\""
 }
 
-
-
 # Boundary Target Alias
 resource "boundary_alias_target" "alias" {
-  name                      = var.alias_name != "" ? var.alias_name : "${var.target_name}"
-  value                     = var.alias_name != "" ? var.alias_name : "${var.target_name}"
-  scope_id                  = "global"
-  destination_id            = boundary_target.this.id
+  count                    = var.alias_name != "" ? 1 : 0  # Create only if `alias_name` is set
+  name                     = var.alias_name
+  value                    = var.alias_name
+  scope_id                 = "global"
+  destination_id           = boundary_target.this.id
   authorize_session_host_id = element([for host in boundary_host_static.this : host.id], 0)
 }
